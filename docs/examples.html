@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Examples - Polite Retry</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <span class="logo-icon">🤝</span>
+        <span>Polite Retry</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="guide.html">Guide</a>
+        <a href="api.html">API</a>
+        <a href="examples.html" class="active">Examples</a>
+        <a href="https://github.com/darkrishabh/polite-retry" class="github-link" target="_blank">
+          <svg height="20" width="20" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="docs-layout">
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <h4>Basic Examples</h4>
+          <ul>
+            <li><a href="#fetch-api">Fetch API</a></li>
+            <li><a href="#axios">Axios</a></li>
+            <li><a href="#database">Database Queries</a></li>
+          </ul>
+          <h4>Production Patterns</h4>
+          <ul>
+            <li><a href="#microservice">Microservice Client</a></li>
+            <li><a href="#api-gateway">API Gateway</a></li>
+            <li><a href="#queue-consumer">Queue Consumer</a></li>
+          </ul>
+          <h4>Advanced</h4>
+          <ul>
+            <li><a href="#per-service">Per-Service Config</a></li>
+            <li><a href="#monitoring">With Monitoring</a></li>
+            <li><a href="#full-stack">Full Stack Example</a></li>
+          </ul>
+        </nav>
+      </aside>
+
+      <div class="guide-content">
+        <h1>Examples</h1>
+        <p>Real-world examples showing how to use Polite Retry in different scenarios.</p>
+
+        <h2 id="fetch-api">Fetch API</h2>
+        <p>Basic example using the Fetch API:</p>
+        <div class="code-example">
+          <pre><code class="language-typescript">import { retry } from 'polite-retry';
+
+async function fetchWithRetry(url: string) {
+  return retry(
+    async () => {
+      const response = await fetch(url);
+      
+      // Don't retry client errors (4xx)
+      if (response.status >= 400 && response.status < 500) {
+        const error = new Error(`Client error: ${response.status}`);
+        (error as any).noRetry = true;
+        throw error;
+      }
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    {
+      maxRetries: 3,
+      initialDelayMs: 100,
+      jitter: 'full',
+      retryIf: (error: any) => !error.noRetry,
+      onRetry: (error, attempt) => {
+        console.log(`Retry ${attempt}: ${error.message}`);
+      }
+    }
+  );
+}
+
+// Usage
+const data = await fetchWithRetry('https://api.example.com/users');</code></pre>
+        </div>
+
+        <h2 id="axios">Axios</h2>
+        <p>Using Polite Retry with Axios:</p>
+        <div class="code-example">
+          <pre><code class="language-typescript">import axios, { AxiosError } from 'axios';
+import { retry, AdaptiveRetryBudget } from 'polite-retry';
+
+// Create a budget per API
+const apiBudget = new AdaptiveRetryBudget({ initialBudget: 0.2 });
+
+const apiClient = axios.create({
+  baseURL: 'https://api.example.com',
+  timeout: 5000,
+});
+
+async function request&lt;T&gt;(config: Parameters&lt;typeof axios.request&gt;[0]): Promise&lt;T&gt; {
+  return retry(
+    async () => {
+      const response = await apiClient.request&lt;T&gt;(config);
+      return response.data;
+    },
+    {
+      maxRetries: 3,
+      jitter: 'full',
+      retryIf: (error) => {
+        if (error instanceof AxiosError) {
+          // Retry network errors and 5xx responses
+          return !error.response || error.response.status >= 500;
+        }
+        return true;
+      }
+    }
+  );
+}
+
+// Usage
+const user = await request&lt;User&gt;({ method: 'GET', url: '/users/123' });</code></pre>
+        </div>
+
+        <h2 id="database">Database Queries</h2>
+        <p>Retrying database operations with connection issues:</p>
+        <div class="code-example">
+          <pre><code class="language-typescript">import { retry } from 'polite-retry';
+import { Pool } from 'pg';
+
+const pool = new Pool();
+
+async function queryWithRetry&lt;T&gt;(sql: string, params: any[] = []): Promise&lt;T[]&gt; {
+  return retry(
+    async () => {
+      const client = await pool.connect();
+      try {
+        const result = await client.query(sql, params);
+        return result.rows;
+      } finally {
+        client.release();
+      }
+    },
+    {
+      maxRetries: 3,
+      initialDelayMs: 100,
+      jitter: 'equal',
+      retryIf: (error) => {
+        // Retry connection errors, not query errors
+        const code = (error as any).code;
+        return ['ECONNREFUSED', 'ETIMEDOUT', 'ECONNRESET', '57P01'].includes(code);
+      }
+    }
+  );
+}
+
+// Usage
+const users = await queryWithRetry&lt;User&gt;('SELECT * FROM users WHERE active = $1', [true]);</code></pre>
+        </div>
+
+        <h2 id="microservice">Microservice Client</h2>
+        <p>A complete microservice client with all protections:</p>
+        <div class="code-example">
+          <pre><code class="language-typescript">import {
+  retryWithProtection,
+  CircuitBreaker,
+  AdaptiveRetryBudget,
+  BackpressureManager,
+  CircuitOpenError
+} from 'polite-retry';
+
+// One instance per downstream service
+class ServiceClient {
+  private circuitBreaker: CircuitBreaker;
+  private budget: AdaptiveRetryBudget;
+  private backpressure: BackpressureManager;
+  
+  constructor(
+    private baseUrl: string,
+    private serviceName: string
+  ) {
+    this.backpressure = new BackpressureManager();
+    
+    this.circuitBreaker = new CircuitBreaker({
+      failureThreshold: 0.5,
+      windowSize: 20,
+      resetTimeoutMs: 30000,
+      onStateChange: (state) => {
+        console.log(`[${serviceName}] Circuit: ${state}`);
+        metrics.gauge(`circuit.${serviceName}`, state === 'open' ? 0 : 1);
+      }
+    });
+    
+    this.budget = new AdaptiveRetryBudget({
+      initialBudget: 0.2,
+      checkBackpressure: () => this.backpressure.isOverloaded(serviceName),
+      onBudgetChange: (budget) => {
+        metrics.gauge(`retry_budget.${serviceName}`, budget);
+      }
+    });
+  }
+  
+  async request&lt;T&gt;(path: string, options: RequestInit = {}): Promise&lt;T&gt; {
+    try {
+      return await retryWithProtection(
+        async () => {
+          const response = await fetch(`${this.baseUrl}${path}`, {
+            ...options,
+            signal: AbortSignal.timeout(5000),
+          });
+          
+          // Record backpressure from response
+          this.backpressure.recordFromHeaders(this.serviceName, response.headers);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          
+          return response.json();
+        },
+        {
+          circuitBreaker: this.circuitBreaker,
+          budget: this.budget
+        },
+        {
+          maxRetries: 3,
+          jitter: 'full',
+          retryIf: (error) => {
+            // Don't retry client errors
+            return !error.message.includes('4');
+          }
+        }
+      );
+    } catch (error) {
+      if (error instanceof CircuitOpenError) {
+        // Fast fail - circuit is open
+        throw new Error(`${this.serviceName} is unavailable`);
+      }
+      throw error;
+    }
+  }
+  
+  getMetrics() {
+    return {
+      circuitState: this.circuitBreaker.getState(),
+      failureRate: this.circuitBreaker.getFailureRate(),
+      retryBudget: this.budget.getBudget(),
+      ...this.budget.getMetrics()
+    };
+  }
+  
+  dispose() {
+    this.budget.dispose();
+  }
+}
+
+// Usage
+const userService = new ServiceClient('https://user-service', 'user-service');
+const paymentService = new ServiceClient('https://payment-service', 'payment-service');
+
+const user = await userService.request&lt;User&gt;('/users/123');
+const payment = await paymentService.request&lt;Payment&gt;('/charge', {
+  method: 'POST',
+  body: JSON.stringify({ amount: 100 })
+});</code></pre>
+        </div>
+
+        <h2 id="api-gateway">API Gateway Pattern</h2>
+        <p>Using Polite Retry in an API gateway that proxies to multiple services:</p>
+        <div class="code-example">
+          <pre><code class="language-typescript">import express from 'express';
+import {
+  retryWithBudget,
+  AdaptiveRetryBudget,
+  RequestCounter,
+  createBackpressureMiddleware
+} from 'polite-retry';
+
+const app = express();
+
+// Track our own load for backpressure responses
+const counter = new RequestCounter();
+app.use(counter.middleware());
+app.use(createBackpressureMiddleware({
+  getLoadLevel: () => counter.getCount() / 100,
+  overloadThreshold: 0.8,
+}));
+
+// Create budgets for each upstream service
+const serviceBudgets = new Map&lt;string, AdaptiveRetryBudget&gt;();
+
+function getBudget(service: string): AdaptiveRetryBudget {
+  if (!serviceBudgets.has(service)) {
+    serviceBudgets.set(service, new AdaptiveRetryBudget({
+      initialBudget: 0.15,
+      highFailureThreshold: 0.25,
+    }));
+  }
+  return serviceBudgets.get(service)!;
+}
+
+// Proxy endpoint
+app.all('/api/:service/*', async (req, res) => {
+  const { service } = req.params;
+  const path = req.params[0];
+  const budget = getBudget(service);
+  
+  try {
+    const result = await retryWithBudget(
+      async () => {
+        const response = await fetch(`http://${service}/${path}`, {
+          method: req.method,
+          headers: req.headers as any,
+          body: ['POST', 'PUT', 'PATCH'].includes(req.method) 
+            ? JSON.stringify(req.body) 
+            : undefined,
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Upstream error: ${response.status}`);
+        }
+        
+        return response.json();
+      },
+      budget,
+      { maxRetries: 2, jitter: 'full' }
+    );
+    
+    res.json(result);
+  } catch (error) {
+    res.status(502).json({ 
+      error: 'Service unavailable',
+      service 
+    });
+  }
+});
+
+// Metrics endpoint
+app.get('/metrics', (req, res) => {
+  const metrics: Record&lt;string, any&gt; = {};
+  for (const [service, budget] of serviceBudgets) {
+    metrics[service] = budget.getMetrics();
+  }
+  res.json(metrics);
+});
+
+app.listen(3000);</code></pre>
+        </div>
+
+        <h2 id="queue-consumer">Queue Consumer</h2>
+        <p>Processing messages from a queue with retry protection:</p>
+        <div class="code-example">
+          <pre><code class="language-typescript">import { retryWithBudget, AdaptiveRetryBudget } from 'polite-retry';
+import { SQS } from '@aws-sdk/client-sqs';
+
+const sqs = new SQS();
+
+// Budget for external API calls during message processing
+const apiBudget = new AdaptiveRetryBudget({ initialBudget: 0.2 });
+
+async function processMessage(message: any): Promise&lt;void&gt; {
+  const data = JSON.parse(message.Body);
+  
+  // Retry external API calls, not the whole message processing
+  await retryWithBudget(
+    async () => {
+      await fetch('https://external-api.com/webhook', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    apiBudget,
+    { maxRetries: 3, jitter: 'full' }
+  );
+}
+
+async function pollQueue(): Promise&lt;void&gt; {
+  while (true) {
+    const response = await sqs.receiveMessage({
+      QueueUrl: process.env.QUEUE_URL,
+      MaxNumberOfMessages: 10,
+      WaitTimeSeconds: 20,
+    });
+    
+    if (response.Messages) {
+      await Promise.all(
+        response.Messages.map(async (message) => {
+          try {
+            await processMessage(message);
+            await sqs.deleteMessage({
+              QueueUrl: process.env.QUEUE_URL,
+              ReceiptHandle: message.ReceiptHandle!,
+            });
+          } catch (error) {
+            console.error('Failed to process message:', error);
+            // Message will be retried by SQS after visibility timeout
+          }
+        })
+      );
+    }
+    
+    // Log metrics periodically
+    console.log('API Budget Metrics:', apiBudget.getMetrics());
+  }
+}
+
+pollQueue();</code></pre>
+        </div>
+
+        <h2 id="per-service">Per-Service Configuration</h2>
+        <p>Different retry configurations for different services:</p>
+        <div class="code-example">
+          <pre><code class="language-typescript">import { retry, retryWithBudget, AdaptiveRetryBudget } from 'polite-retry';
+
+// Critical payment service - conservative retries
+const paymentConfig = {
+  maxRetries: 2,
+  initialDelayMs: 500,
+  jitter: 'full' as const,
+  timeoutMs: 10000,
+};
+
+// Fast cache service - quick retries
+const cacheConfig = {
+  maxRetries: 1,
+  initialDelayMs: 10,
+  jitter: 'full' as const,
+  timeoutMs: 100,
+};
+
+// Slow analytics service - patient retries
+const analyticsConfig = {
+  maxRetries: 5,
+  initialDelayMs: 1000,
+  maxDelayMs: 60000,
+  jitter: 'decorrelated' as const,
+  timeoutMs: 30000,
+};
+
+// Budgets with different thresholds
+const budgets = {
+  payment: new AdaptiveRetryBudget({ 
+    initialBudget: 0.1,  // Very conservative
+    highFailureThreshold: 0.1,
+  }),
+  cache: new AdaptiveRetryBudget({ 
+    initialBudget: 0.3,  // More aggressive
+    highFailureThreshold: 0.5,
+  }),
+  analytics: new AdaptiveRetryBudget({ 
+    initialBudget: 0.2,
+    highFailureThreshold: 0.3,
+  }),
+};
+
+// Usage
+await retryWithBudget(() => chargeCard(), budgets.payment, paymentConfig);
+await retry(() => getFromCache(key), cacheConfig);
+await retryWithBudget(() => sendAnalytics(data), budgets.analytics, analyticsConfig);</code></pre>
+        </div>
+
+        <h2 id="monitoring">With Prometheus Monitoring</h2>
+        <p>Integrating with Prometheus for observability:</p>
+        <div class="code-example">
+          <pre><code class="language-typescript">import { AdaptiveRetryBudget, CircuitBreaker } from 'polite-retry';
+import { Gauge, Counter, register } from 'prom-client';
+
+// Prometheus metrics
+const retryBudgetGauge = new Gauge({
+  name: 'retry_budget',
+  help: 'Current retry budget',
+  labelNames: ['service'],
+});
+
+const failureRateGauge = new Gauge({
+  name: 'retry_failure_rate',
+  help: 'Current failure rate',
+  labelNames: ['service'],
+});
+
+const rafGauge = new Gauge({
+  name: 'retry_amplification_factor',
+  help: 'Retry amplification factor',
+  labelNames: ['service'],
+});
+
+const circuitStateGauge = new Gauge({
+  name: 'circuit_breaker_state',
+  help: 'Circuit breaker state (1=closed, 0=open)',
+  labelNames: ['service'],
+});
+
+const retryCounter = new Counter({
+  name: 'retry_attempts_total',
+  help: 'Total retry attempts',
+  labelNames: ['service', 'success'],
+});
+
+// Factory function with monitoring
+function createMonitoredClient(serviceName: string) {
+  const budget = new AdaptiveRetryBudget({
+    initialBudget: 0.2,
+    onBudgetChange: (b, rate) => {
+      retryBudgetGauge.set({ service: serviceName }, b);
+      failureRateGauge.set({ service: serviceName }, rate);
+    },
+  });
+  
+  const breaker = new CircuitBreaker({
+    onStateChange: (state) => {
+      circuitStateGauge.set(
+        { service: serviceName }, 
+        state === 'closed' ? 1 : 0
+      );
+    },
+  });
+  
+  // Periodically update RAF metric
+  setInterval(() => {
+    const metrics = budget.getMetrics();
+    rafGauge.set({ service: serviceName }, metrics.retryAmplificationFactor);
+  }, 10000);
+  
+  return { budget, breaker };
+}
+
+// Express endpoint for Prometheus scraping
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});</code></pre>
+        </div>
+
+        <h2 id="full-stack">Full Stack Example</h2>
+        <p>Complete example with server-side backpressure and client-side retry:</p>
+        
+        <h3>Server (Express)</h3>
+        <div class="code-example">
+          <pre><code class="language-typescript">// server.ts
+import express from 'express';
+import { RequestCounter, createBackpressureMiddleware } from 'polite-retry';
+
+const app = express();
+const counter = new RequestCounter();
+
+// Add backpressure headers to all responses
+app.use(counter.middleware());
+app.use(createBackpressureMiddleware({
+  getLoadLevel: () => counter.getCount() / 50, // Max 50 concurrent
+  overloadThreshold: 0.8,
+  retryAfterSeconds: 2,
+}));
+
+app.get('/api/data', async (req, res) => {
+  // Simulate work
+  await new Promise(r => setTimeout(r, 100));
+  res.json({ data: 'Hello!' });
+});
+
+app.listen(3000, () => console.log('Server running on :3000'));</code></pre>
+        </div>
+
+        <h3>Client</h3>
+        <div class="code-example">
+          <pre><code class="language-typescript">// client.ts
+import { 
+  retryWithBudget, 
+  AdaptiveRetryBudget, 
+  BackpressureManager 
+} from 'polite-retry';
+
+const backpressure = new BackpressureManager();
+
+const budget = new AdaptiveRetryBudget({
+  initialBudget: 0.2,
+  checkBackpressure: () => backpressure.isOverloaded('api'),
+});
+
+async function fetchData() {
+  return retryWithBudget(
+    async () => {
+      const response = await fetch('http://localhost:3000/api/data');
+      
+      // Record backpressure signal
+      backpressure.recordFromHeaders('api', response.headers);
+      
+      // Check if server is telling us to back off
+      const retryAfter = backpressure.getRetryAfterMs('api');
+      if (retryAfter) {
+        console.log(`Server suggests waiting ${retryAfter}ms`);
+      }
+      
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    },
+    budget,
+    { maxRetries: 3, jitter: 'full' }
+  );
+}
+
+// Make many concurrent requests
+async function loadTest() {
+  const results = await Promise.allSettled(
+    Array.from({ length: 100 }, () => fetchData())
+  );
+  
+  const succeeded = results.filter(r => r.status === 'fulfilled').length;
+  console.log(`Success: ${succeeded}/100`);
+  console.log('Metrics:', budget.getMetrics());
+}
+
+loadTest();</code></pre>
+        </div>
+
+        <div class="cta-buttons">
+          <a href="guide.html" class="btn btn-primary">Read the Guide</a>
+          <a href="api.html" class="btn btn-secondary">API Reference</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>Created by <a href="https://github.com/darkrishabh">Rishabh Mehan</a> • MIT License</p>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+</body>
+</html>
