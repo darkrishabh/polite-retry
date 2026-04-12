@@ -1,15 +1,29 @@
+<div align="center">
+
+<img src=".github/assets/readme-cover.png" alt="Polite Retry — retries that don't overwhelm your servers" width="100%" />
+
 # Polite Retry
 
 **Retries that don't overwhelm your servers.**
 
 A smart retry library for TypeScript/JavaScript that prevents retry amplification in distributed systems. Unlike aggressive retry libraries, `polite-retry` knows when to back off.
 
-[![npm version](https://img.shields.io/npm/v/polite-retry.svg)](https://www.npmjs.com/package/polite-retry)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<br/>
 
-**[Documentation](https://darkrishabh.github.io/polite-retry)** | **[API Reference](https://darkrishabh.github.io/polite-retry/api.html)** | **[Examples](https://darkrishabh.github.io/polite-retry/examples.html)**
+[![npm](https://img.shields.io/npm/v/polite-retry?style=flat-square&logo=npm&label=npm)](https://www.npmjs.com/package/polite-retry)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](https://github.com/darkrishabh/polite-retry/blob/main/LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node](https://img.shields.io/badge/node-%3E%3D16.0.0-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 
-Based on research from "Retry Amplification in Distributed Systems: A Systematic Analysis of Retry Policies and Their Role in Cascading Failures."
+<br/>
+
+**[Documentation](https://darkrishabh.github.io/polite-retry)** · **[API Reference](https://darkrishabh.github.io/polite-retry/api.html)** · **[Examples](https://darkrishabh.github.io/polite-retry/examples.html)**
+
+<br/>
+
+<sub>Based on research from <em>Retry Amplification in Distributed Systems: A Systematic Analysis of Retry Policies and Their Role in Cascading Failures</em>.</sub>
+
+</div>
 
 ## The Problem
 
