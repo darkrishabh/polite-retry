@@ -46,12 +46,13 @@ export function calculateBackoff(
       // Balances spread with guaranteed minimum delay
       return (cappedDelay / 2) + (Math.random() * cappedDelay / 2);
 
-    case 'decorrelated':
+    case 'decorrelated': {
       // Decorrelated jitter: based on previous delay
       // Provides good spread with some correlation to previous attempt
       const prev = previousDelay ?? initialDelayMs;
       const decorrelated = Math.random() * (prev * 3 - initialDelayMs) + initialDelayMs;
       return Math.min(decorrelated, maxDelayMs);
+    }
 
     default:
       return cappedDelay;

@@ -1,4 +1,4 @@
-import { retry, retryWithResult, retryWithBudget, createRetryable } from './retry';
+import { retry, retryWithResult, createRetryable } from './retry';
 import { AdaptiveRetryBudget } from './adaptive-budget';
 import { CircuitBreaker } from './circuit-breaker';
 import { calculateBackoff } from './backoff';

@@ -1,3 +1,5 @@
+import type { IncomingMessage, ServerResponse } from 'node:http';
+
 /**
  * Backpressure signaling mechanisms for distributed systems.
  * 
@@ -195,14 +197,18 @@ export function createBackpressureMiddleware(options: {
   
   /** Suggested retry delay when overloaded, in seconds (default: 5) */
   retryAfterSeconds?: number;
-}): (req: any, res: any, next: () => void) => Promise<void> {
+}): (
+  req: IncomingMessage,
+  res: ServerResponse,
+  next: () => void,
+) => Promise<void> {
   const { 
     getLoadLevel, 
     overloadThreshold = 0.8,
     retryAfterSeconds = 5,
   } = options;
 
-  return async (_req: any, res: any, next: () => void) => {
+  return async (_req: IncomingMessage, res: ServerResponse, next: () => void) => {
     const loadLevel = await getLoadLevel();
     
     // Always send load level
@@ -273,8 +279,12 @@ export class RequestCounter {
   /**
    * Express/Connect middleware that automatically tracks requests.
    */
-  middleware(): (req: any, res: any, next: () => void) => void {
-    return (_req: any, res: any, next: () => void) => {
+  middleware(): (
+    req: IncomingMessage,
+    res: ServerResponse,
+    next: () => void,
+  ) => void {
+    return (_req: IncomingMessage, res: ServerResponse, next: () => void) => {
       this.increment();
       
       let decremented = false;

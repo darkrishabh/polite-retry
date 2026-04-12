@@ -1,4 +1,4 @@
-import { RetryOptions, RetryResult, AdaptiveRetryOptions } from './types';
+import { RetryOptions, RetryResult } from './types';
 import { calculateBackoff, sleep, JitterStrategy } from './backoff';
 import { CircuitBreaker, CircuitOpenError } from './circuit-breaker';
 import { AdaptiveRetryBudget } from './adaptive-budget';
