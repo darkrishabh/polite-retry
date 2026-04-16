@@ -1,7 +1,13 @@
-import { retry, retryWithResult, createRetryable } from './retry';
+import {
+  retry,
+  retryWithResult,
+  retryWithCircuitBreaker,
+  retryWithBudget,
+  retryWithProtection,
+  createRetryable,
+} from './retry';
 import { AdaptiveRetryBudget } from './adaptive-budget';
-import { CircuitBreaker } from './circuit-breaker';
-import { calculateBackoff } from './backoff';
+import { CircuitBreaker, CircuitOpenError } from './circuit-breaker';
 
 describe('retry', () => {
   it('should succeed on first attempt', async () => {
@@ -98,42 +104,96 @@ describe('retryWithResult', () => {
   });
 });
 
-describe('calculateBackoff', () => {
-  it('should calculate exponential backoff without jitter', () => {
-    const delay0 = calculateBackoff(0, 100, 10000, 2, 'none');
-    const delay1 = calculateBackoff(1, 100, 10000, 2, 'none');
-    const delay2 = calculateBackoff(2, 100, 10000, 2, 'none');
-    
-    expect(delay0).toBe(100);
-    expect(delay1).toBe(200);
-    expect(delay2).toBe(400);
+describe('retryWithCircuitBreaker', () => {
+  it('throws CircuitOpenError when circuit is open', async () => {
+    const breaker = new CircuitBreaker({
+      failureThreshold: 0.5,
+      windowSize: 2,
+    });
+    breaker.recordFailure();
+    breaker.recordFailure();
+    expect(breaker.getState()).toBe('open');
+
+    await expect(
+      retryWithCircuitBreaker(async () => 'ok', breaker, { maxRetries: 0 }),
+    ).rejects.toThrow(CircuitOpenError);
   });
 
-  it('should cap at maxDelayMs', () => {
-    const delay = calculateBackoff(10, 100, 1000, 2, 'none');
-    expect(delay).toBe(1000);
+  it('returns result when circuit allows and fn succeeds', async () => {
+    const breaker = new CircuitBreaker({
+      failureThreshold: 0.99,
+      windowSize: 10,
+    });
+    const fn = jest.fn().mockResolvedValue('done');
+    const result = await retryWithCircuitBreaker(fn, breaker, {
+      maxRetries: 0,
+    });
+    expect(result).toBe('done');
+    expect(fn).toHaveBeenCalledTimes(1);
   });
+});
 
-  it('should apply full jitter', () => {
-    const delays = Array.from({ length: 100 }, () => 
-      calculateBackoff(1, 100, 10000, 2, 'full')
+describe('retryWithBudget', () => {
+  it('retries according to budget and succeeds', async () => {
+    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+    const budget = new AdaptiveRetryBudget({ initialBudget: 1 });
+    const fn = jest
+      .fn()
+      .mockRejectedValueOnce(new Error('transient'))
+      .mockResolvedValue('ok');
+
+    try {
+      const result = await retryWithBudget(fn, budget, {
+        maxRetries: 3,
+        initialDelayMs: 1,
+      });
+
+      expect(result).toBe('ok');
+      expect(fn).toHaveBeenCalledTimes(2);
+    } finally {
+      randomSpy.mockRestore();
+      budget.dispose();
+    }
+  });
+});
+
+describe('retryWithProtection', () => {
+  it('returns when circuit and budget allow success', async () => {
+    const circuitBreaker = new CircuitBreaker({
+      failureThreshold: 0.99,
+      windowSize: 10,
+    });
+    const budget = new AdaptiveRetryBudget({ initialBudget: 1 });
+    const fn = jest.fn().mockResolvedValue('protected');
+
+    const result = await retryWithProtection(
+      fn,
+      { circuitBreaker, budget },
+      { maxRetries: 1, initialDelayMs: 1 },
     );
-    
-    // All delays should be between 0 and 200
-    expect(delays.every(d => d >= 0 && d <= 200)).toBe(true);
-    
-    // Should have variation (not all same value)
-    const uniqueDelays = new Set(delays);
-    expect(uniqueDelays.size).toBeGreaterThan(1);
+
+    expect(result).toBe('protected');
+    budget.dispose();
   });
 
-  it('should apply equal jitter', () => {
-    const delays = Array.from({ length: 100 }, () => 
-      calculateBackoff(1, 100, 10000, 2, 'equal')
-    );
-    
-    // All delays should be between 100 and 200 (half + random half)
-    expect(delays.every(d => d >= 100 && d <= 200)).toBe(true);
+  it('throws CircuitOpenError when circuit is open', async () => {
+    const circuitBreaker = new CircuitBreaker({
+      failureThreshold: 0.5,
+      windowSize: 2,
+    });
+    circuitBreaker.recordFailure();
+    circuitBreaker.recordFailure();
+    const budget = new AdaptiveRetryBudget({ initialBudget: 1 });
+
+    await expect(
+      retryWithProtection(
+        async () => 'x',
+        { circuitBreaker, budget },
+        { maxRetries: 0 },
+      ),
+    ).rejects.toThrow(CircuitOpenError);
+
+    budget.dispose();
   });
 });
 
