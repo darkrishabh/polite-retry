@@ -783,7 +783,7 @@ pre code {
 
 .comparison-simulator {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
   gap: 1.25rem;
 }
 
@@ -841,7 +841,7 @@ pre code {
 .node-flow-graph {
   display: block;
   width: 100%;
-  min-height: 300px;
+  min-height: 262px;
 }
 
 .graph-surface {
@@ -868,6 +868,28 @@ pre code {
   fill: var(--danger);
 }
 
+.traffic-lane {
+  stroke-linecap: butt;
+  opacity: 0.62;
+}
+
+.traffic-original {
+  stroke: var(--success);
+}
+
+.traffic-retry {
+  stroke: var(--warning);
+  opacity: 0.36;
+}
+
+.traffic-original-fill {
+  fill: var(--success);
+}
+
+.traffic-retry-fill {
+  fill: var(--warning);
+}
+
 .edge-badge rect {
   fill: #fff;
   stroke: rgb(15 23 42 / 0.12);
@@ -881,32 +903,39 @@ pre code {
   text-anchor: middle;
 }
 
-.retry-loop {
-  fill: none;
-  stroke-linecap: round;
-  stroke-dasharray: 6 7;
-  opacity: 0.55;
+.lane-label rect,
+.pressure-meter .pressure-track {
+  fill: #fff;
+  stroke: rgb(15 23 42 / 0.12);
 }
 
-.retry-loop-hot .retry-loop,
-.retry-loop-hot .retry-arrow {
-  stroke: #b45309;
-  fill: #b45309;
+.lane-label text,
+.pressure-meter text {
+  fill: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 800;
+  text-anchor: middle;
 }
 
-.retry-loop-budget .retry-loop,
-.retry-loop-budget .retry-arrow {
-  stroke: var(--warning);
-  fill: var(--warning);
+.pressure-meter text {
+  font-size: 9.5px;
 }
 
-.retry-loop-budget {
-  opacity: 0.5;
+.retry-badge rect {
+  fill: #fff7ed;
+}
+
+.pressure-hot {
+  fill: var(--danger);
+}
+
+.pressure-ok {
+  fill: var(--success);
 }
 
 .flow-packet {
-  opacity: 0.85;
-  filter: drop-shadow(0 1px 2px rgb(15 23 42 / 0.18));
+  opacity: 0.8;
 }
 
 .packet-original {
@@ -961,13 +990,13 @@ pre code {
 .summary-primary {
   fill: var(--ink);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 800;
 }
 
 .summary-secondary {
   fill: var(--ink-muted);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
 }
 
