@@ -17,7 +17,7 @@ Research-backed adaptive retry orchestration for Node.js services, microservices
 
 <br/>
 
-**[Documentation](https://darkrishabh.github.io/polite-retry)** · **[API Reference](https://darkrishabh.github.io/polite-retry/api.html)** · **[Examples](https://darkrishabh.github.io/polite-retry/examples.html)**
+**[Documentation](https://darkrishabh.github.io/polite-retry)** · **[API Reference](https://darkrishabh.github.io/polite-retry/api.html)** · **[Examples](https://darkrishabh.github.io/polite-retry/examples.html)** · **[Simulator](https://darkrishabh.github.io/polite-retry/simulator.html)**
 
 <br/>
 
@@ -96,6 +96,10 @@ This library provides three retry strategies with increasing sophistication:
 | Backpressure awareness | Yes | No | No | No |
 | Retry Amplification Factor metrics | Yes | No | No | No |
 | AI infrastructure positioning | Yes | No | No | No |
+
+## Retry Storm Simulator
+
+Open the [interactive simulator](https://darkrishabh.github.io/polite-retry/simulator.html) to compare naive retries against Adaptive Retry Budgeting. It visualizes request amplification, estimated downstream load, success rate, and token cost multiplier for AI infrastructure scenarios.
 
 ## Installation
 

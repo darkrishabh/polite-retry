@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="color-scheme" content="light">
+  <title>Retry Storm Simulator - Polite Retry</title>
+  <meta name="description" content="Interactive retry amplification simulator comparing naive retries, circuit breakers, and adaptive retry budgeting.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="site-strip">
+    TypeScript · Zero runtime dependencies · <a href="https://www.npmjs.com/package/polite-retry" target="_blank" rel="noopener noreferrer">npm</a>
+    · <a href="https://github.com/darkrishabh/polite-retry" target="_blank" rel="noopener noreferrer">Source</a>
+  </div>
+  <nav class="navbar" aria-label="Primary">
+    <div class="nav-container">
+      <div class="nav-brand-row">
+        <a href="index.html" class="nav-logo">
+          <span class="logo-mark" aria-hidden="true"></span>
+          <span class="nav-logo-text">Polite <strong>Retry</strong></span>
+        </a>
+        <span class="nav-version" title="Current release">v1.0.0</span>
+      </div>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="guide.html">Guide</a>
+        <a href="api.html">API</a>
+        <a href="examples.html">Examples</a>
+        <a href="simulator.html" class="active">Simulator</a>
+        <a href="https://www.npmjs.com/package/polite-retry" class="nav-external" target="_blank" rel="noopener noreferrer">npm</a>
+        <a href="https://github.com/darkrishabh/polite-retry" class="github-link" target="_blank" rel="noopener noreferrer">
+          <svg height="18" width="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="simulator-shell">
+    <section class="simulator-hero">
+      <div>
+        <p class="eyebrow">Retry Storm Simulator</p>
+        <h1>Retries can make outages worse.</h1>
+        <p>Compare naive retries against Adaptive Retry Budgeting and see how retry amplification changes request volume, downstream load, and AI token cost.</p>
+      </div>
+      <div class="simulator-actions" aria-label="Scenario actions">
+        <button class="btn btn-primary sim-action" id="injectFailure" type="button">Inject 50% failure</button>
+        <button class="btn sim-ghost-action" id="shareScenario" type="button">Share Scenario</button>
+      </div>
+    </section>
+
+    <section class="simulator-grid" aria-label="Retry storm simulator controls and results">
+      <aside class="control-panel" aria-label="Simulation controls">
+        <div class="control-group">
+          <div class="control-label-row">
+            <label for="failureRate">Failure rate</label>
+            <output id="failureRateValue" for="failureRate">50%</output>
+          </div>
+          <input id="failureRate" type="range" min="0" max="90" value="50" step="5">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row">
+            <label for="retryCount">Retries per tier</label>
+            <output id="retryCountValue" for="retryCount">3</output>
+          </div>
+          <input id="retryCount" type="range" min="0" max="6" value="3" step="1">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row">
+            <label for="serviceDepth">Service depth</label>
+            <output id="serviceDepthValue" for="serviceDepth">3 tiers</output>
+          </div>
+          <input id="serviceDepth" type="range" min="1" max="5" value="3" step="1">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row">
+            <label for="baseLoad">Base load</label>
+            <output id="baseLoadValue" for="baseLoad">100 req/s</output>
+          </div>
+          <input id="baseLoad" type="range" min="50" max="500" value="100" step="25">
+        </div>
+
+        <fieldset class="segmented-control">
+          <legend>Scenario</legend>
+          <label>
+            <input type="radio" name="scenarioMode" value="service" checked>
+            <span>Service</span>
+          </label>
+          <label>
+            <input type="radio" name="scenarioMode" value="ai">
+            <span>AI infra</span>
+          </label>
+        </fieldset>
+
+        <div class="toggle-list">
+          <label class="toggle-row">
+            <input id="jitterToggle" type="checkbox" checked>
+            <span>Jitter enabled</span>
+          </label>
+          <label class="toggle-row">
+            <input id="backoffToggle" type="checkbox" checked>
+            <span>Backoff enabled</span>
+          </label>
+        </div>
+      </aside>
+
+      <section class="comparison-simulator" aria-label="Strategy comparison">
+        <article class="sim-panel" id="standardPanel">
+          <div class="sim-panel-header">
+            <div>
+              <p class="panel-kicker">Naive retries</p>
+              <h2>Standard retry policy</h2>
+            </div>
+            <strong id="standardStatus" class="status-pill status-danger">Overload</strong>
+          </div>
+          <div class="flow-stage" id="standardFlow" aria-hidden="true"></div>
+          <div class="metric-grid">
+            <div>
+              <span>RAF</span>
+              <strong id="standardRaf">6.59x</strong>
+            </div>
+            <div>
+              <span>Request volume</span>
+              <strong id="standardVolume">659 req/s</strong>
+            </div>
+            <div>
+              <span>Estimated success</span>
+              <strong id="standardSuccess">42%</strong>
+            </div>
+            <div>
+              <span id="standardCostLabel">Queue pressure</span>
+              <strong id="standardCost">High</strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="sim-panel" id="budgetPanel">
+          <div class="sim-panel-header">
+            <div>
+              <p class="panel-kicker">Adaptive strategy</p>
+              <h2>Retry budget plus backpressure</h2>
+            </div>
+            <strong id="budgetStatus" class="status-pill status-ok">Stable</strong>
+          </div>
+          <div class="flow-stage" id="budgetFlow" aria-hidden="true"></div>
+          <div class="metric-grid">
+            <div>
+              <span>RAF</span>
+              <strong id="budgetRaf">1.12x</strong>
+            </div>
+            <div>
+              <span>Request volume</span>
+              <strong id="budgetVolume">112 req/s</strong>
+            </div>
+            <div>
+              <span>Estimated success</span>
+              <strong id="budgetSuccess">54%</strong>
+            </div>
+            <div>
+              <span id="budgetCostLabel">Queue pressure</span>
+              <strong id="budgetCost">Low</strong>
+            </div>
+          </div>
+        </article>
+      </section>
+    </section>
+
+    <section class="simulator-notes">
+      <div>
+        <h2>What the simulator is showing</h2>
+        <p>Retry Amplification Factor estimates how much extra downstream traffic a retry policy creates during partial failures. With failure probability <code>p</code>, retry count <code>n</code>, and service depth <code>d</code>, naive multi-tier retries can grow roughly as <code>((1 - p^(n + 1)) / (1 - p))^d</code>.</p>
+      </div>
+      <div>
+        <h2>Why ARB changes the curve</h2>
+        <p>Adaptive Retry Budgeting treats retries as a bounded shared resource. When failure rates rise or backpressure appears, the retry budget shrinks, limiting RAF while preserving some recovery from transient failures.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <p class="footer-lead">Based on research on retry amplification in distributed systems.</p>
+      <p class="footer-meta">
+        <a href="https://github.com/darkrishabh/polite-retry">GitHub</a>
+        <span class="footer-dot">·</span>
+        <a href="https://www.npmjs.com/package/polite-retry">npm</a>
+        <span class="footer-dot">·</span>
+        <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6313332">Research paper</a>
+        <span class="footer-dot">·</span>
+        MIT License
+      </p>
+    </div>
+  </footer>
+
+  <script src="simulator.js"></script>
+</body>
+</html>
