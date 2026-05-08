@@ -903,6 +903,23 @@ pre code {
   opacity: 0.5;
 }
 
+.flow-packet {
+  opacity: 0.92;
+  filter: drop-shadow(0 2px 3px rgb(15 23 42 / 0.24));
+}
+
+.packet-original {
+  fill: var(--success);
+}
+
+.packet-retry {
+  fill: var(--warning);
+}
+
+.packet-fail {
+  fill: var(--danger);
+}
+
 .graph-node rect {
   fill: #fff;
   stroke: rgb(15 23 42 / 0.14);

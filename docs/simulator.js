@@ -159,6 +159,25 @@ function renderFlow(stage, metrics, state, variant) {
     `;
   }).join('');
 
+  const packetDensity = variant === 'standard'
+    ? clamp(Math.round(metrics.raf * 2.2), 3, 16)
+    : clamp(Math.round(metrics.raf * 1.3), 2, 5);
+  const edgePackets = nodes.slice(0, -1).flatMap((node, edgeIndex) => {
+    const next = nodes[edgeIndex + 1];
+    return Array.from({ length: packetDensity }, (_, packetIndex) => {
+      const delay = -((packetIndex * 0.34) + edgeIndex * 0.2).toFixed(2);
+      const duration = (variant === 'standard' ? 1.45 : 2.1) + edgeIndex * 0.05;
+      const packetClass = variant === 'standard' && metrics.pressure > 0.28 && packetIndex % 4 === 0
+        ? 'packet-fail'
+        : 'packet-original';
+      return `
+        <circle class="flow-packet ${packetClass}" r="${variant === 'standard' ? 4.4 : 4}">
+          <animateMotion dur="${duration}s" begin="${delay}s" repeatCount="indefinite" path="M ${node.x + nodeWidth / 2} ${node.y} L ${next.x - nodeWidth / 2} ${next.y}" />
+        </circle>
+      `;
+    });
+  }).join('');
+
   const retryLoops = state.retryCount === 0 ? '' : nodes.slice(1).map((node, index) => {
     const loopY = 42 + (index % 2) * 18;
     const start = node.x - 28;
@@ -169,6 +188,30 @@ function renderFlow(stage, metrics, state, variant) {
         <polygon class="retry-arrow" points="${end - 2},${node.y - 30} ${end - 13},${node.y - 35} ${end - 11},${node.y - 23}" />
       </g>
     `;
+  }).join('');
+
+  const retryPacketCount = state.retryCount === 0
+    ? 0
+    : variant === 'standard'
+      ? clamp(state.retryCount + Math.round(metrics.raf), 4, 14)
+      : clamp(Math.round((metrics.raf - 1) * 8), 1, 4);
+  const retryPackets = state.retryCount === 0 ? '' : nodes.slice(1).flatMap((node, nodeIndex) => {
+    const loopY = 42 + (nodeIndex % 2) * 18;
+    const start = node.x - 28;
+    const end = node.x + 28;
+    const loopPath = `M ${start} ${node.y - 30} C ${start - 26} ${loopY}, ${end + 26} ${loopY}, ${end} ${node.y - 30}`;
+    return Array.from({ length: retryPacketCount }, (_, packetIndex) => {
+      const delay = -((packetIndex * 0.28) + nodeIndex * 0.18).toFixed(2);
+      const duration = variant === 'standard' ? 1.1 : 2.4;
+      const packetClass = variant === 'standard' && metrics.pressure > 0.28 && packetIndex % 3 === 0
+        ? 'packet-fail'
+        : 'packet-retry';
+      return `
+        <circle class="flow-packet ${packetClass}" r="${variant === 'standard' ? 4.2 : 3.4}">
+          <animateMotion dur="${duration}s" begin="${delay}s" repeatCount="indefinite" path="${loopPath}" />
+        </circle>
+      `;
+    });
   }).join('');
 
   const nodeMarkup = nodes.map((node) => {
@@ -204,6 +247,8 @@ function renderFlow(stage, metrics, state, variant) {
       <rect class="graph-surface" x="0" y="0" width="420" height="300" rx="14"></rect>
       ${edges}
       ${retryLoops}
+      ${edgePackets}
+      ${retryPackets}
       ${nodeMarkup}
       <g class="graph-summary" transform="translate(12 232)">
         <rect width="396" height="48" rx="12"></rect>
