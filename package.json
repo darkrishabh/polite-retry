@@ -1,7 +1,7 @@
 {
   "name": "polite-retry",
   "version": "1.0.0",
-  "description": "Polite retries that don't overwhelm your servers. Implements Adaptive Retry Budgeting (ARB) to prevent retry amplification in distributed systems.",
+  "description": "Research-backed adaptive retry orchestration for Node.js services, AI infrastructure, and distributed systems.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -17,10 +17,15 @@
     "exponential-backoff",
     "jitter",
     "circuit-breaker",
+    "retry-budget",
+    "retry-budgeting",
+    "retry-amplification",
+    "backpressure",
     "resilience",
     "fault-tolerance",
     "distributed-systems",
-    "microservices"
+    "microservices",
+    "ai-infrastructure"
   ],
   "author": "Rishabh Mehan",
   "license": "MIT",

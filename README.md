@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src=".github/assets/readme-cover.png" alt="Polite Retry — retries that don't overwhelm your servers" width="100%" />
+<img src=".github/assets/readme-cover.png" alt="Polite Retry - Prevent retry storms and cascading failures" width="100%" />
 
 # Polite Retry
 
-**Retries that don't overwhelm your servers.**
+### Prevent retry storms and cascading failures in distributed systems.
 
-A smart retry library for TypeScript/JavaScript that prevents retry amplification in distributed systems. Unlike aggressive retry libraries, `polite-retry` knows when to back off.
+Research-backed adaptive retry orchestration for Node.js services, microservices, and AI infrastructure.
 
 <br/>
 
@@ -21,21 +21,58 @@ A smart retry library for TypeScript/JavaScript that prevents retry amplificatio
 
 <br/>
 
-<sub>Based on research from <em>Retry Amplification in Distributed Systems: A Systematic Analysis of Retry Policies and Their Role in Cascading Failures</em>.</sub>
+<sub>Based on <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6313332"><em>Retry Amplification in Distributed Systems: A Systematic Analysis of Retry Policies and Their Role in Cascading Failures</em></a>.</sub>
 
 </div>
 
-## The Problem
+## Why polite-retry exists
 
-Naive retry policies can make system failures worse. When a service experiences partial failure:
+Retries are supposed to improve reliability. In distributed systems, naive retries often make failures worse.
 
-1. Clients retry failed requests
-2. Retried requests add load to an already stressed system
-3. Increased load causes more failures
+When services begin failing or slowing down:
+
+1. Clients retry aggressively
+2. Retries amplify traffic
+3. Downstream systems become overloaded
 4. More failures trigger more retries
-5. **Cascade collapse**
+5. Cascading failures spread through the system
 
 This is called **Retry Amplification**. In a 3-tier system with 50% failure rate and 3 retries per tier, request volume can amplify by **6.6x**.
+
+Most retry libraries optimize for:
+
+```text
+How can this request succeed?
+```
+
+`polite-retry` optimizes for:
+
+```text
+How can the overall system remain stable?
+```
+
+Retries are not just error handling. In distributed systems, retries behave like distributed congestion control.
+
+## Built from research
+
+`polite-retry` is based on research into retry amplification, cascading failures, and Adaptive Retry Budgeting (ARB).
+
+Paper: [Retry Amplification in Distributed Systems: A Systematic Analysis of Retry Policies and Their Role in Cascading Failures](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6313332)
+
+Key findings from the research:
+
+- Naive retries can reduce overall success rates under correlated failures
+- Only 4.9% of detected retry configurations implemented jitter
+- Multi-tier retries can amplify request volume exponentially
+- Adaptive retry budgeting maintains near-baseline success rates while limiting retry storms
+
+## Why this matters for AI systems
+
+Modern AI systems are especially vulnerable to retry amplification. A single user request may involve LLM providers, vector databases, embedding services, agent tool calls, and inference gateways.
+
+Naive retries do not just amplify traffic. They amplify token costs, inference load, latency, and rate-limit pressure.
+
+`polite-retry` helps AI and backend systems degrade gracefully under stress instead of amplifying failures.
 
 ## The Solution
 
@@ -43,9 +80,22 @@ This library provides three retry strategies with increasing sophistication:
 
 | Strategy | Use Case | Amplification Risk |
 |----------|----------|-------------------|
-| `retry()` | Simple retries with backoff/jitter | Medium |
-| `retryWithCircuitBreaker()` | Stop retrying when service is down | Low |
+| `retry()` | Standard retries with backoff/jitter | Medium |
+| `retryWithCircuitBreaker()` | Prevent retries during outages | Low |
 | `retryWithBudget()` | **Adaptive Retry Budgeting (ARB)** | Very Low |
+| `retryWithProtection()` | Circuit breaker plus adaptive budget | Very Low |
+
+## How it compares
+
+| Capability | `polite-retry` | `p-retry` | `async-retry` | `axios-retry` |
+|------------|----------------|-----------|---------------|---------------|
+| Exponential backoff | Yes | Yes | Yes | Yes |
+| Jitter strategies | Yes | Partial | Partial | Partial |
+| Circuit breaker | Yes | No | No | No |
+| Adaptive retry budgeting | Yes | No | No | No |
+| Backpressure awareness | Yes | No | No | No |
+| Retry Amplification Factor metrics | Yes | No | No | No |
+| AI infrastructure positioning | Yes | No | No | No |
 
 ## Installation
 

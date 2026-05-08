@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0f172a">
   <meta name="color-scheme" content="light">
-  <title>Polite Retry - Smart retries for distributed systems</title>
-  <meta name="description" content="A TypeScript retry library that prevents retry amplification and cascading failures in distributed systems.">
+  <title>Polite Retry - Adaptive retry orchestration for distributed systems</title>
+  <meta name="description" content="Research-backed adaptive retry orchestration for Node.js services, AI infrastructure, and distributed systems.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -46,10 +46,10 @@
   <header class="hero">
     <div class="hero-content">
       <h1>Polite Retry</h1>
-      <p class="hero-subtitle">Retries that don't overwhelm your servers</p>
+      <p class="hero-subtitle">Prevent retry storms and cascading failures</p>
       <p class="hero-description">
-        A smart retry library for TypeScript that prevents retry amplification 
-        and cascading failures in distributed systems.
+        Research-backed adaptive retry orchestration for Node.js services,
+        microservices, and AI infrastructure.
       </p>
       <div class="hero-buttons">
         <a href="guide.html" class="btn btn-primary">Get Started</a>
@@ -68,8 +68,8 @@
       <div class="feature-grid">
         <div class="feature-card">
           <div class="feature-icon">🛡️</div>
-          <h3>Prevents Retry Storms</h3>
-          <p>Adaptive Retry Budgeting limits retry volume to prevent cascading failures when services are struggling.</p>
+          <h3>Retry Storm Prevention</h3>
+          <p>Adaptive Retry Budgeting limits retry volume when downstream systems are already struggling.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">⚡</div>
@@ -88,22 +88,24 @@
         </div>
         <div class="feature-card">
           <div class="feature-icon">📈</div>
-          <h3>Built-in Metrics</h3>
+          <h3>RAF Metrics</h3>
           <p>Track retry rates, success rates, and retry amplification factor for observability.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">🔧</div>
-          <h3>TypeScript First</h3>
-          <p>Full TypeScript support with comprehensive type definitions and excellent IDE integration.</p>
+          <h3>AI Infra Ready</h3>
+          <p>Use retry budgets for LLM APIs, embedding services, vector databases, and agent tool calls.</p>
         </div>
       </div>
     </section>
 
     <section class="problem-section">
-      <h2>The Problem: Retry Amplification</h2>
+      <h2>Retries are distributed congestion control</h2>
       <div class="problem-content">
         <div class="problem-text">
-          <p>When a service experiences partial failure, naive retry policies can make things <strong>much worse</strong>:</p>
+          <p>Most retry libraries optimize for one question: <strong>how can this request succeed?</strong></p>
+          <p>Polite Retry optimizes for a different question: <strong>how can the overall system remain stable?</strong></p>
+          <p>When a service experiences partial failure, naive retry policies can make things much worse:</p>
           <ol>
             <li>Service starts failing 50% of requests</li>
             <li>All clients retry failed requests</li>
@@ -128,7 +130,8 @@ With naive retries during 50% failure:
 
     <section class="solution-section">
       <h2>The Solution: Adaptive Retry Budgeting</h2>
-      <p>Polite Retry implements the ARB algorithm that dynamically limits retries based on observed failure rates:</p>
+      <p>Polite Retry implements Adaptive Retry Budgeting (ARB), based on research into retry amplification, cascading failures, and system-aware retry control.</p>
+      <p>Successful requests establish retry capacity. Failures consume it. When failure rates rise or downstream systems signal overload, retry capacity shrinks automatically.</p>
       <div class="code-example">
         <pre><code class="language-typescript">import { retryWithBudget, AdaptiveRetryBudget } from 'polite-retry';
 
@@ -153,6 +156,44 @@ const data = await retryWithBudget(
 console.log(budget.getMetrics());
 // { retryAmplificationFactor: 1.15, failureRate: 0.08, ... }</code></pre>
       </div>
+    </section>
+
+    <section class="comparison-section">
+      <h2>Built from Research</h2>
+      <div class="comparison-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Finding</th>
+              <th>What it means</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Naive retries can reduce success rates</td>
+              <td>Retrying more is not always more reliable.</td>
+            </tr>
+            <tr>
+              <td>Only 4.9% of detected retry configurations used jitter</td>
+              <td>Many systems remain exposed to synchronized retry waves.</td>
+            </tr>
+            <tr>
+              <td>Multi-tier retries amplify request volume</td>
+              <td>Local retry choices become global load problems.</td>
+            </tr>
+            <tr>
+              <td>Adaptive Retry Budgeting limits retry storms</td>
+              <td>Retries become a bounded resource instead of an unlimited reaction.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Paper:
+        <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6313332" target="_blank" rel="noopener noreferrer">
+          Retry Amplification in Distributed Systems
+        </a>
+      </p>
     </section>
 
     <section class="comparison-section">
