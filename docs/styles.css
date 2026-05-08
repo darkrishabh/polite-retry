@@ -831,104 +831,162 @@ pre code {
 
 .flow-stage {
   position: relative;
-  height: 300px;
   margin: 1rem;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background:
-    linear-gradient(90deg, rgb(15 23 42 / 0.06) 1px, transparent 1px),
-    linear-gradient(180deg, rgb(15 23 42 / 0.05) 1px, transparent 1px),
-    #f8fafc;
-  background-size: 32px 32px;
+  background: #f8fafc;
 }
 
-.flow-track {
-  position: absolute;
-  inset: 0;
+.node-flow-graph {
+  display: block;
+  width: 100%;
+  min-height: 300px;
 }
 
-.request-particle {
-  --lane: 0;
-  --delay: 0s;
-  --duration: 2.4s;
-  position: absolute;
-  top: calc(36px + var(--lane) * 34px);
-  left: -18px;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  opacity: 0.9;
-  animation: request-flight var(--duration) linear infinite;
-  animation-delay: var(--delay);
+.graph-surface {
+  fill: #f8fafc;
 }
 
-.particle-ok {
-  background: var(--success);
-  box-shadow: 0 0 0 4px rgb(5 150 105 / 0.12);
+.flow-edge {
+  stroke-linecap: round;
+  opacity: 0.82;
 }
 
-.particle-retry {
-  background: var(--warning);
-  box-shadow: 0 0 0 4px rgb(217 119 6 / 0.13);
+.flow-edge-stable {
+  stroke: var(--success);
+  fill: var(--success);
 }
 
-.particle-fail {
-  background: var(--danger);
-  box-shadow: 0 0 0 4px rgb(220 38 38 / 0.13);
+.flow-edge-hot {
+  stroke: var(--warning);
+  fill: var(--warning);
 }
 
-@keyframes request-flight {
-  from {
-    transform: translateX(0) translateY(0);
-  }
-  50% {
-    transform: translateX(48vw) translateY(20px);
-  }
-  to {
-    transform: translateX(96vw) translateY(0);
-  }
+.flow-edge-critical {
+  stroke: var(--danger);
+  fill: var(--danger);
 }
 
-.service-chain {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  height: 100%;
-  align-content: center;
-  gap: 0.7rem;
-  padding: 1rem;
+.edge-badge rect {
+  fill: #fff;
+  stroke: rgb(15 23 42 / 0.12);
 }
 
-.service-node {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: center;
-  min-height: 42px;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid rgb(15 23 42 / 0.1);
-  border-left: 4px solid var(--accent);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 0.92);
-  box-shadow: var(--shadow-sm);
+.edge-badge text {
+  fill: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
 }
 
-.service-node span {
-  font-size: 0.88rem;
+.retry-loop {
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 7 6;
+}
+
+.retry-loop-hot .retry-loop,
+.retry-loop-hot .retry-arrow {
+  stroke: var(--danger);
+  fill: var(--danger);
+}
+
+.retry-loop-budget .retry-loop,
+.retry-loop-budget .retry-arrow {
+  stroke: var(--warning);
+  fill: var(--warning);
+}
+
+.retry-loop-budget {
+  opacity: 0.5;
+}
+
+.graph-node rect {
+  fill: #fff;
+  stroke: rgb(15 23 42 / 0.14);
+  filter: url("#nodeShadow");
+}
+
+.graph-node.node-protected rect {
+  stroke: var(--success);
+  stroke-width: 2;
+}
+
+.graph-node.node-overloaded rect {
+  fill: #fff1f2;
+  stroke: var(--danger);
+  stroke-width: 2;
+}
+
+.node-title {
+  fill: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  text-anchor: middle;
+}
+
+.node-load {
+  fill: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.graph-summary rect {
+  fill: #fff;
+  stroke: rgb(15 23 42 / 0.1);
+}
+
+.summary-primary {
+  fill: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
   font-weight: 800;
 }
 
-.service-node strong {
-  color: var(--ink-muted);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  white-space: nowrap;
+.summary-secondary {
+  fill: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 700;
 }
 
-.service-node.node-hot {
-  border-left-color: var(--danger);
-  background: #fff1f2;
+.graph-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  align-items: center;
+  padding: 0 1rem 1rem;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.graph-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.graph-legend i {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+}
+
+.legend-original {
+  background: var(--success);
+}
+
+.legend-retry {
+  background: var(--warning);
+}
+
+.legend-hot {
+  background: var(--danger);
 }
 
 .metric-grid {

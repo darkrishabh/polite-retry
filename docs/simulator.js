@@ -103,28 +103,118 @@ function statusText(pressure) {
   return ['Stable', 'status-ok'];
 }
 
+function scenarioLabels(mode, depth) {
+  const serviceLabels = ['Client', 'API', 'Service A', 'Service B', 'Database', 'Provider'];
+  const aiLabels = ['User', 'Agent', 'LLM API', 'Embeddings', 'Vector DB', 'Tool API'];
+  return (mode === 'ai' ? aiLabels : serviceLabels).slice(0, depth + 1);
+}
+
+function splitLabel(label) {
+  const parts = label.split(' ');
+  if (parts.length === 1) return [label];
+  const midpoint = Math.ceil(parts.length / 2);
+  return [parts.slice(0, midpoint).join(' '), parts.slice(midpoint).join(' ')];
+}
+
 function renderFlow(stage, metrics, state, variant) {
-  const tiers = ['API', 'Service A', 'Service B', 'Database', 'Provider'].slice(0, state.serviceDepth + 1);
-  const particleCount = clamp(Math.round(8 + metrics.raf * 4), 8, 42);
-  const particles = Array.from({ length: particleCount }, (_, index) => {
-    const lane = index % 5;
-    const hueClass = variant === 'standard' && metrics.pressure > 0.28
-      ? index % 3 === 0 ? 'particle-fail' : 'particle-retry'
-      : index % 5 === 0 ? 'particle-retry' : 'particle-ok';
-    const delay = `${(index % 12) * -0.38}s`;
-    const duration = `${2.2 + (index % 4) * 0.18}s`;
-    return `<span class="request-particle ${hueClass}" style="--lane:${lane};--delay:${delay};--duration:${duration}"></span>`;
+  const tiers = scenarioLabels(state.mode, state.serviceDepth);
+  const startX = 42;
+  const endX = 378;
+  const gap = tiers.length > 1 ? (endX - startX) / (tiers.length - 1) : 0;
+  const nodeWidth = 74;
+  const nodeHeight = 62;
+  const y = 130;
+  const totalVolume = Math.round(state.baseLoad * metrics.raf);
+  const retryVolume = Math.max(0, totalVolume - state.baseLoad);
+  const edgeWidth = clamp(2 + metrics.raf * 1.2, 2, 9);
+  const retryStrokeWidth = variant === 'standard'
+    ? clamp(1.5 + state.retryCount * 0.8, 1.5, 6)
+    : clamp(1.2 + Math.max(0, metrics.raf - 1) * 4, 1.2, 3);
+  const graphState = metrics.pressure > 0.66 ? 'critical' : metrics.pressure > 0.28 ? 'hot' : 'stable';
+  const retryLabel = variant === 'standard'
+    ? `${state.retryCount} retries/tier`
+    : `${Math.round((metrics.raf - 1) * state.baseLoad)} budgeted retries`;
+
+  const nodes = tiers.map((label, index) => ({
+    label,
+    x: startX + index * gap,
+    y,
+    isEntry: index === 0,
+    isTerminal: index === tiers.length - 1,
+  }));
+
+  const edges = nodes.slice(0, -1).map((node, index) => {
+    const next = nodes[index + 1];
+    const volume = index === 0 ? state.baseLoad : totalVolume;
+    const midX = (node.x + next.x) / 2;
+    return `
+      <g class="flow-edge-group">
+        <line class="flow-edge flow-edge-${graphState}" x1="${node.x + nodeWidth / 2}" y1="${node.y}" x2="${next.x - nodeWidth / 2}" y2="${next.y}" stroke-width="${edgeWidth}" />
+        <polygon class="flow-arrow flow-edge-${graphState}" points="${next.x - nodeWidth / 2 - 1},${next.y} ${next.x - nodeWidth / 2 - 11},${next.y - 6} ${next.x - nodeWidth / 2 - 11},${next.y + 6}" />
+        <g class="edge-badge" transform="translate(${midX - 29}, ${node.y - 38})">
+          <rect width="58" height="24" rx="8"></rect>
+          <text x="29" y="16">${volume} r/s</text>
+        </g>
+      </g>
+    `;
   }).join('');
 
+  const retryLoops = state.retryCount === 0 ? '' : nodes.slice(1).map((node, index) => {
+    const loopY = 42 + (index % 2) * 18;
+    const start = node.x - 28;
+    const end = node.x + 28;
+    return `
+      <g class="retry-loop-group ${variant === 'standard' ? 'retry-loop-hot' : 'retry-loop-budget'}">
+        <path class="retry-loop" d="M ${start} ${node.y - 30} C ${start - 26} ${loopY}, ${end + 26} ${loopY}, ${end} ${node.y - 30}" stroke-width="${retryStrokeWidth}" />
+        <polygon class="retry-arrow" points="${end - 2},${node.y - 30} ${end - 13},${node.y - 35} ${end - 11},${node.y - 23}" />
+      </g>
+    `;
+  }).join('');
+
+  const nodeMarkup = nodes.map((node) => {
+    const lines = splitLabel(node.label);
+    const nodeClass = node.isTerminal && metrics.pressure > 0.28
+      ? 'graph-node node-overloaded'
+      : node.isTerminal && variant === 'budget'
+        ? 'graph-node node-protected'
+        : 'graph-node';
+    const volume = node.isEntry ? state.baseLoad : totalVolume;
+    return `
+      <g class="${nodeClass}" transform="translate(${node.x - nodeWidth / 2}, ${node.y - nodeHeight / 2})">
+        <rect width="${nodeWidth}" height="${nodeHeight}" rx="10"></rect>
+        <text class="node-title" x="${nodeWidth / 2}" y="${lines.length === 1 ? 25 : 19}">
+          ${lines.map((line, lineIndex) => `<tspan x="${nodeWidth / 2}" dy="${lineIndex === 0 ? 0 : 15}">${line}</tspan>`).join('')}
+        </text>
+        <text class="node-load" x="${nodeWidth / 2}" y="52">${volume} r/s</text>
+      </g>
+    `;
+  }).join('');
+
+  const overloadLabel = metrics.pressure > 0.28
+    ? variant === 'standard' ? 'downstream overloaded' : 'budget protecting downstream'
+    : 'downstream stable';
+
   stage.innerHTML = `
-    <div class="flow-track">${particles}</div>
-    <div class="service-chain">
-      ${tiers.map((tier, index) => `
-        <div class="service-node ${index === tiers.length - 1 && metrics.pressure > 0.28 ? 'node-hot' : ''}">
-          <span>${tier}</span>
-          <strong>${index === 0 ? state.baseLoad : Math.round(state.baseLoad * metrics.raf)} req/s</strong>
-        </div>
-      `).join('')}
+    <svg class="node-flow-graph" viewBox="0 0 420 300" role="img" aria-label="${variant === 'standard' ? 'Naive retry flow' : 'Adaptive retry budget flow'}">
+      <defs>
+        <filter id="nodeShadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#0f172a" flood-opacity="0.12"></feDropShadow>
+        </filter>
+      </defs>
+      <rect class="graph-surface" x="0" y="0" width="420" height="300" rx="14"></rect>
+      ${edges}
+      ${retryLoops}
+      ${nodeMarkup}
+      <g class="graph-summary" transform="translate(12 232)">
+        <rect width="396" height="48" rx="12"></rect>
+        <text class="summary-primary" x="14" y="20">${state.baseLoad} original + ${retryVolume} retries = ${totalVolume} r/s</text>
+        <text class="summary-secondary" x="18" y="38">${retryLabel} | ${overloadLabel}</text>
+      </g>
+    </svg>
+    <div class="graph-legend" aria-hidden="true">
+      <span><i class="legend-original"></i> Original path</span>
+      <span><i class="legend-retry"></i> Retry loop</span>
+      <span><i class="legend-hot"></i> Overload risk</span>
     </div>
   `;
 }
