@@ -884,13 +884,14 @@ pre code {
 .retry-loop {
   fill: none;
   stroke-linecap: round;
-  stroke-dasharray: 7 6;
+  stroke-dasharray: 6 7;
+  opacity: 0.55;
 }
 
 .retry-loop-hot .retry-loop,
 .retry-loop-hot .retry-arrow {
-  stroke: var(--danger);
-  fill: var(--danger);
+  stroke: #b45309;
+  fill: #b45309;
 }
 
 .retry-loop-budget .retry-loop,
@@ -904,8 +905,8 @@ pre code {
 }
 
 .flow-packet {
-  opacity: 0.92;
-  filter: drop-shadow(0 2px 3px rgb(15 23 42 / 0.24));
+  opacity: 0.85;
+  filter: drop-shadow(0 1px 2px rgb(15 23 42 / 0.18));
 }
 
 .packet-original {
