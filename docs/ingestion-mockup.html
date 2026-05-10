@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Ingestion Mockup - Polite Retry</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .mockup-shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 5rem 1.5rem;
+    }
+
+    .mockup-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+
+    .mockup-panel {
+      overflow: hidden;
+    }
+
+    .mockup-panel h2 {
+      padding: 1rem 1rem 0;
+      font-size: 1.05rem;
+    }
+
+    .mockup-graph {
+      display: block;
+      width: 100%;
+      min-height: 260px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar" aria-label="Primary">
+    <div class="nav-container">
+      <div class="nav-brand-row">
+        <a href="index.html" class="nav-logo">
+          <span class="nav-logo-mark"></span>
+          <span class="nav-logo-text">Polite <strong>Retry</strong></span>
+        </a>
+        <span class="nav-version">mockup</span>
+      </div>
+      <div class="nav-links">
+        <a href="simulator.html">Simulator</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="mockup-shell">
+    <p class="eyebrow">Simpler simulator direction</p>
+    <h1>Static topology, one equation.</h1>
+    <p class="section-lead">No packet animation, no retry arcs, no traffic particles. The visual says: retries turn a small input into a bigger downstream load.</p>
+
+    <section class="mockup-grid">
+      <article class="card mockup-panel">
+        <h2>Naive retries</h2>
+        <svg class="mockup-graph" viewBox="0 0 470 280" role="img" aria-label="Naive retry amplification mockup">
+          <rect class="graph-surface" x="0" y="0" width="470" height="280" rx="14"></rect>
+          <g class="graph-pill graph-pill-entry" transform="translate(24 24)">
+            <rect width="124" height="30" rx="8"></rect>
+            <text x="62" y="19">100 r/s enters</text>
+          </g>
+          <g class="graph-pill impact-hot" transform="translate(280 24)">
+            <rect width="166" height="30" rx="8"></rect>
+            <text x="83" y="19">overload</text>
+          </g>
+          <line class="graph-link graph-link-hot" x1="116" y1="118" x2="350" y2="118"></line>
+          <polygon class="graph-arrow graph-arrow-hot" points="350,118 338,111 338,125"></polygon>
+
+          <g class="graph-node" transform="translate(32 88)">
+            <rect width="84" height="60" rx="10"></rect>
+            <text class="node-title" x="42" y="25">Client</text>
+            <text class="node-load" x="42" y="48">100 r/s</text>
+          </g>
+          <g class="graph-node" transform="translate(138 88)">
+            <rect width="84" height="60" rx="10"></rect>
+            <text class="node-title" x="42" y="25">API</text>
+            <text class="node-load" x="42" y="48">501 r/s</text>
+          </g>
+          <g class="graph-node" transform="translate(244 88)">
+            <rect width="84" height="60" rx="10"></rect>
+            <text class="node-title" x="42" y="25">Service</text>
+            <text class="node-load" x="42" y="48">501 r/s</text>
+          </g>
+          <g class="graph-node node-overloaded" transform="translate(350 88)">
+            <rect width="84" height="60" rx="10"></rect>
+            <text class="node-title" x="42" y="25">DB</text>
+            <text class="node-load" x="42" y="48">501 r/s</text>
+          </g>
+          <g class="retry-impact" transform="translate(24 190)">
+            <rect width="422" height="58" rx="10"></rect>
+            <text class="summary-primary" x="18" y="24">100 r/s input becomes 501 r/s downstream</text>
+            <text class="summary-secondary" x="18" y="42">Retries add 401 r/s of extra work</text>
+          </g>
+        </svg>
+      </article>
+
+      <article class="card mockup-panel">
+        <h2>Adaptive retry budgeting</h2>
+        <svg class="mockup-graph" viewBox="0 0 470 280" role="img" aria-label="Adaptive retry budget mockup">
+          <rect class="graph-surface" x="0" y="0" width="470" height="280" rx="14"></rect>
+          <g class="graph-pill graph-pill-entry" transform="translate(24 24)">
+            <rect width="124" height="30" rx="8"></rect>
+            <text x="62" y="19">100 r/s enters</text>
+          </g>
+          <g class="graph-pill impact-ok" transform="translate(280 24)">
+            <rect width="166" height="30" rx="8"></rect>
+            <text x="83" y="19">stable</text>
+          </g>
+          <line class="graph-link graph-link-protected" x1="116" y1="118" x2="350" y2="118"></line>
+          <polygon class="graph-arrow graph-arrow-protected" points="350,118 338,111 338,125"></polygon>
+
+          <g class="graph-node" transform="translate(32 88)">
+            <rect width="84" height="60" rx="10"></rect>
+            <text class="node-title" x="42" y="25">Client</text>
+            <text class="node-load" x="42" y="48">100 r/s</text>
+          </g>
+          <g class="graph-node" transform="translate(138 88)">
+            <rect width="84" height="60" rx="10"></rect>
+            <text class="node-title" x="42" y="25">API</text>
+            <text class="node-load" x="42" y="48">110 r/s</text>
+          </g>
+          <g class="graph-node" transform="translate(244 88)">
+            <rect width="84" height="60" rx="10"></rect>
+            <text class="node-title" x="42" y="25">Service</text>
+            <text class="node-load" x="42" y="48">110 r/s</text>
+          </g>
+          <g class="graph-node node-protected" transform="translate(350 88)">
+            <rect width="84" height="60" rx="10"></rect>
+            <text class="node-title" x="42" y="25">DB</text>
+            <text class="node-load" x="42" y="48">110 r/s</text>
+          </g>
+          <g class="retry-impact" transform="translate(24 190)">
+            <rect width="422" height="58" rx="10"></rect>
+            <text class="summary-primary" x="18" y="24">100 r/s input becomes 110 r/s downstream</text>
+            <text class="summary-secondary" x="18" y="42">Retries add 10 r/s of extra work</text>
+          </g>
+        </svg>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

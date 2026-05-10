@@ -841,76 +841,48 @@ pre code {
 .node-flow-graph {
   display: block;
   width: 100%;
-  min-height: 262px;
+  min-height: 232px;
 }
 
 .graph-surface {
   fill: #f8fafc;
 }
 
-.flow-edge {
+.graph-link {
+  stroke: #64748b;
+  stroke-width: 4;
   stroke-linecap: round;
-  opacity: 0.82;
 }
 
-.flow-edge-stable {
-  stroke: var(--success);
-  fill: var(--success);
-}
-
-.flow-edge-hot {
-  stroke: var(--warning);
-  fill: var(--warning);
-}
-
-.flow-edge-critical {
+.graph-link-hot {
   stroke: var(--danger);
+}
+
+.graph-link-protected,
+.graph-link-stable {
+  stroke: var(--success);
+}
+
+.graph-arrow {
+  fill: #64748b;
+}
+
+.graph-arrow-hot {
   fill: var(--danger);
 }
 
-.traffic-lane {
-  stroke-linecap: butt;
-  opacity: 0.62;
-}
-
-.traffic-original {
-  stroke: var(--success);
-}
-
-.traffic-retry {
-  stroke: var(--warning);
-  opacity: 0.36;
-}
-
-.traffic-original-fill {
+.graph-arrow-protected,
+.graph-arrow-stable {
   fill: var(--success);
 }
 
-.traffic-retry-fill {
-  fill: var(--warning);
-}
-
-.edge-badge rect {
+.graph-pill rect,
+.retry-impact rect {
   fill: #fff;
   stroke: rgb(15 23 42 / 0.12);
 }
 
-.edge-badge text {
-  fill: var(--ink);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  text-anchor: middle;
-}
-
-.lane-label rect,
-.pressure-meter .pressure-track {
-  fill: #fff;
-  stroke: rgb(15 23 42 / 0.12);
-}
-
-.lane-label text,
-.pressure-meter text {
+.graph-pill text {
   fill: var(--ink-muted);
   font-family: var(--font-mono);
   font-size: 10.5px;
@@ -918,36 +890,30 @@ pre code {
   text-anchor: middle;
 }
 
-.pressure-meter text {
-  font-size: 9.5px;
+.graph-pill-entry rect {
+  fill: #ecfdf5;
 }
 
-.retry-badge rect {
-  fill: #fff7ed;
+.impact-hot rect {
+  fill: #fee2e2;
+  stroke: rgb(220 38 38 / 0.22);
 }
 
-.pressure-hot {
-  fill: var(--danger);
+.impact-hot text {
+  fill: #991b1b;
 }
 
-.pressure-ok {
-  fill: var(--success);
+.impact-ok rect {
+  fill: #ecfdf5;
+  stroke: rgb(5 150 105 / 0.22);
 }
 
-.flow-packet {
-  opacity: 0.8;
+.impact-ok text {
+  fill: #047857;
 }
 
-.packet-original {
-  fill: var(--success);
-}
-
-.packet-retry {
-  fill: var(--warning);
-}
-
-.packet-fail {
-  fill: var(--danger);
+.retry-impact rect {
+  fill: #fff;
 }
 
 .graph-node rect {

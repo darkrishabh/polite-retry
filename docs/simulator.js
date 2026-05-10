@@ -116,42 +116,19 @@ function splitLabel(label) {
   return [parts.slice(0, midpoint).join(' '), parts.slice(midpoint).join(' ')];
 }
 
-function movingPackets(nodes, nodeWidth, y, count, className, speed) {
-  return nodes.slice(0, -1).flatMap((node, edgeIndex) => {
-    const next = nodes[edgeIndex + 1];
-    const left = node.x + nodeWidth / 2;
-    const right = next.x - nodeWidth / 2;
-    return Array.from({ length: count }, (_, packetIndex) => {
-      const delay = -((packetIndex * 0.42) + edgeIndex * 0.18).toFixed(2);
-      return `
-        <rect class="flow-packet ${className}" x="-7" y="-2" width="14" height="4" rx="2">
-          <animateMotion dur="${speed}s" begin="${delay}s" repeatCount="indefinite" path="M ${left} ${y} L ${right} ${y}" />
-        </rect>
-      `;
-    });
-  }).join('');
-}
-
 function renderFlow(stage, metrics, state, variant) {
   const tiers = scenarioLabels(state.mode, state.serviceDepth);
-  const startX = 64;
-  const endX = 344;
+  const startX = 60;
+  const endX = 356;
   const gap = tiers.length > 1 ? (endX - startX) / (tiers.length - 1) : 0;
-  const nodeWidth = 72;
+  const nodeWidth = 74;
   const nodeHeight = 58;
-  const nodeY = 128;
-  const originalLaneY = 100;
-  const retryLaneY = 156;
+  const nodeY = 98;
   const totalVolume = Math.round(state.baseLoad * metrics.raf);
   const retryVolume = Math.max(0, totalVolume - state.baseLoad);
-  const retryWidth = retryVolume === 0
-    ? 0
-    : variant === 'standard'
-      ? clamp((retryVolume / state.baseLoad) * 4, 5, 14)
-      : clamp((retryVolume / state.baseLoad) * 8, 3, 6);
-  const pressureLevel = clamp(metrics.pressure, 0.08, 1);
-  const pressureFillHeight = 104 * pressureLevel;
-  const pressureColorClass = metrics.pressure > 0.28 ? 'pressure-hot' : 'pressure-ok';
+  const graphState = metrics.pressure > 0.28
+    ? variant === 'standard' ? 'hot' : 'protected'
+    : 'stable';
 
   const nodes = tiers.map((label, index) => ({
     label,
@@ -161,38 +138,15 @@ function renderFlow(stage, metrics, state, variant) {
     isTerminal: index === tiers.length - 1,
   }));
 
-  const lanes = nodes.slice(0, -1).map((node, index) => {
+  const edges = nodes.slice(0, -1).map((node, index) => {
     const next = nodes[index + 1];
     const left = node.x + nodeWidth / 2;
     const right = next.x - nodeWidth / 2;
     return `
-      <line class="traffic-lane traffic-original" x1="${left}" y1="${originalLaneY}" x2="${right}" y2="${originalLaneY}" stroke-width="9" />
-      <polygon class="lane-arrow traffic-original-fill" points="${right},${originalLaneY} ${right - 11},${originalLaneY - 6} ${right - 11},${originalLaneY + 6}" />
-      ${retryVolume > 0 ? `
-        <line class="traffic-lane traffic-retry" x1="${left}" y1="${retryLaneY}" x2="${right}" y2="${retryLaneY}" stroke-width="${retryWidth}" />
-        <polygon class="lane-arrow traffic-retry-fill" points="${right},${retryLaneY} ${right - 11},${retryLaneY - 6} ${right - 11},${retryLaneY + 6}" />
-      ` : ''}
+      <line class="graph-link graph-link-${graphState}" x1="${left}" y1="${nodeY}" x2="${right}" y2="${nodeY}" />
+      <polygon class="graph-arrow graph-arrow-${graphState}" points="${right},${nodeY} ${right - 10},${nodeY - 6} ${right - 10},${nodeY + 6}" />
     `;
   }).join('');
-
-  const originalPackets = movingPackets(
-    nodes,
-    nodeWidth,
-    originalLaneY,
-    variant === 'standard' ? 3 : 2,
-    'packet-original',
-    variant === 'standard' ? 2.1 : 2.5,
-  );
-  const retryPackets = retryVolume > 0
-    ? movingPackets(
-      nodes,
-      nodeWidth,
-      retryLaneY,
-      variant === 'standard' ? 3 : 1,
-      'packet-retry',
-      variant === 'standard' ? 1.7 : 3,
-    )
-    : '';
 
   const nodeMarkup = nodes.map((node) => {
     const lines = splitLabel(node.label);
@@ -213,48 +167,37 @@ function renderFlow(stage, metrics, state, variant) {
     `;
   }).join('');
 
-  const overloadLabel = metrics.pressure > 0.28
-    ? variant === 'standard' ? 'downstream overloaded' : 'budget protecting downstream'
-    : 'downstream stable';
+  const impactLabel = metrics.pressure > 0.28
+    ? variant === 'standard' ? 'Downstream overload' : 'Budget absorbs retries'
+    : 'Downstream stable';
+  const impactClass = metrics.pressure > 0.28
+    ? variant === 'standard' ? 'impact-hot' : 'impact-ok'
+    : 'impact-ok';
 
   stage.innerHTML = `
-    <svg class="node-flow-graph" viewBox="0 0 430 262" role="img" aria-label="${variant === 'standard' ? 'Naive retry flow' : 'Adaptive retry budget flow'}">
+    <svg class="node-flow-graph" viewBox="0 0 430 232" role="img" aria-label="${variant === 'standard' ? 'Naive retry flow' : 'Adaptive retry budget flow'}">
       <defs>
         <filter id="nodeShadow" x="-20%" y="-20%" width="140%" height="140%">
           <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#0f172a" flood-opacity="0.12"></feDropShadow>
         </filter>
       </defs>
-      <rect class="graph-surface" x="0" y="0" width="430" height="262" rx="14"></rect>
-      <g class="lane-label" transform="translate(16 58)">
-        <rect width="118" height="26" rx="8"></rect>
-        <text x="59" y="17">${state.baseLoad} r/s original</text>
+      <rect class="graph-surface" x="0" y="0" width="430" height="232" rx="14"></rect>
+      <g class="graph-pill graph-pill-entry" transform="translate(16 22)">
+        <rect width="118" height="28" rx="8"></rect>
+        <text x="59" y="18">${state.baseLoad} r/s enters</text>
       </g>
-      ${retryVolume > 0 ? `
-        <g class="lane-label retry-badge" transform="translate(16 171)">
-          <rect width="112" height="26" rx="8"></rect>
-          <text x="56" y="17">${retryVolume} r/s retries</text>
-        </g>
-      ` : ''}
-      ${lanes}
-      ${originalPackets}
-      ${retryPackets}
+      <g class="graph-pill ${impactClass}" transform="translate(236 22)">
+        <rect width="178" height="28" rx="8"></rect>
+        <text x="89" y="18">${impactLabel}</text>
+      </g>
+      ${edges}
       ${nodeMarkup}
-      <g class="pressure-meter" transform="translate(398 72)">
-        <text x="7" y="-11">pressure</text>
-        <rect class="pressure-track" x="0" y="0" width="14" height="104" rx="7"></rect>
-        <rect class="${pressureColorClass}" x="0" y="${104 - pressureFillHeight}" width="14" height="${pressureFillHeight}" rx="7"></rect>
-      </g>
-      <g class="graph-summary" transform="translate(14 204)">
-        <rect width="402" height="44" rx="10"></rect>
-        <text class="summary-primary" x="14" y="18">${state.baseLoad} original + ${retryVolume} retries = ${totalVolume} r/s</text>
-        <text class="summary-secondary" x="14" y="34">${overloadLabel}</text>
+      <g class="retry-impact" transform="translate(16 160)">
+        <rect width="398" height="50" rx="10"></rect>
+        <text class="summary-primary" x="16" y="21">${state.baseLoad} r/s input becomes ${totalVolume} r/s downstream</text>
+        <text class="summary-secondary" x="16" y="38">Retries add ${retryVolume} r/s of extra work</text>
       </g>
     </svg>
-    <div class="graph-legend" aria-hidden="true">
-      <span><i class="legend-original"></i> Original traffic</span>
-      <span><i class="legend-retry"></i> Retry traffic</span>
-      <span><i class="legend-hot"></i> Downstream pressure</span>
-    </div>
   `;
 }
 
